@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Notifications & Advisories | EIRRS</title>
+  <link rel="stylesheet" href="../static/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="emergency-ticker">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span class="ticker-badge">Live Advisory</span>
+      <span>Emergency response lines operational 24/7 across Lagos state</span>
+    </div>
+    <div style="font-weight:bold;">Toll-Free: 112 / 767</div>
+  </div>
+  <header>
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon"><i class="fa-solid fa-truck-medical"></i></div>
+        <div class="brand-text">
+          <h1>EIRRS</h1>
+          <span>Emergency Incident System</span>
+        </div>
+      </a>
+      <nav>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="report_incident.html">Report</a></li>
+          <li><a href="incident_map.html">Tactical Map</a></li>
+          <li><a href="my_reports.html">My Reports</a></li>
+          <li><a href="response_status.html">Dispatch</a></li>
+          <li><a href="analytics.html">Analytics</a></li>
+          <li><a href="alerts.html" class="active">Alerts</a></li>
+        </ul>
+      </nav>
+      <div class="nav-actions">
+        <a href="profile.html" class="btn btn-outline btn-sm"><i class="fa-solid fa-user"></i> Profile</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="main-wrapper" style="max-width:850px;">
+    <h2><i class="fa-solid fa-bell"></i> Emergency Bulletins & Broadcasts</h2>
+    <p style="color:var(--text-secondary); margin-bottom:20px;">Civic advisories and real-time response alerts.</p>
+
+    <div class="card" style="border-left:4px solid var(--status-critical);">
+      <span class="badge badge-CRITICAL">Flash Flood Alert</span>
+      <h3 style="margin-top:6px;">Lekki-Epe Expressway Drainage Swell</h3>
+      <p>High water accumulation near commuter corridors. Motorists are advised to utilize alternative high-elevation arteries.</p>
+      <small style="color:var(--text-secondary);">Published: 2 hours ago</small>
+    </div>
+
+    <div class="card" style="border-left:4px solid var(--status-high);">
+      <span class="badge badge-HIGH">Traffic Hazard</span>
+      <h3 style="margin-top:6px;">Overturned Commercial Trailer at Berger Junction</h3>
+      <p>Outbound traffic restricted to one lane; crane recovery crews deployed.</p>
+      <small style="color:var(--text-secondary);">Published: 3 hours ago</small>
+    </div>
+  </div>
+  <script src="../static/main.js"></script>
+</body>
+</html>

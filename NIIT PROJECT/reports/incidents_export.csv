@@ -1,0 +1,2 @@
+id,user_id,category,title,description,severity,latitude,longitude,location_address,status,created_at,updated_at
+1,1,fire,Tanker fuel spill,Oil tanker spill might cause massive fire,HIGH,6.573722,3.350234,33 gbemisola street off Allen avenue,resolved,2026-09-30 11:25:43,2026-10-01 10:27:43

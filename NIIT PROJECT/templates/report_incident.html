@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Report Incident | EIRRS</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <style>
+    #pickerMap {
+      width: 100%;
+      height: 340px;
+      min-height: 340px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      margin-top: 8px;
+      margin-bottom: 12px;
+      z-index: 1;
+    }
+    .coord-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="emergency-ticker">
+    <div class="ticker-content">
+      <span class="ticker-badge">Live Advisory</span>
+      <span>Emergency response lines operational 24/7 across Lagos state</span>
+    </div>
+    <div style="font-weight:bold;">Toll-Free: 112 / 767</div>
+  </div>
+
+  <header>
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon"><i class="fa-solid fa-truck-medical"></i></div>
+        <div class="brand-text">
+          <h1>EIRRS</h1>
+          <span>Emergency Incident System</span>
+        </div>
+      </a>
+      <nav>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="dashboard.html">Dashboard</a></li>
+          <li><a href="report_incident.html" class="active">Report Emergency</a></li>
+          <li><a href="incident_map.html">Tactical Map</a></li>
+          <li><a href="profile.html">Profile</a></li>
+        </ul>
+      </nav>
+      <div class="nav-actions">
+        <button onclick="toggleTheme()" class="btn btn-outline btn-sm" style="border:none;" title="Toggle Theme">
+          <i id="themeIcon" class="fa-solid fa-sun"></i>
+        </button>
+        <button onclick="handleLogout()" class="btn btn-outline btn-sm">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="main-wrapper" style="max-width: 760px;">
+    <div class="card">
+      <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 14px; margin-bottom: 20px;">
+        <h2 style="color: var(--text-main); margin-bottom: 4px;">
+          <i class="fa-solid fa-tower-broadcast" style="color: var(--primary);"></i> Transmit Emergency Incident
+        </h2>
+        <span style="color: var(--text-muted); font-size: 0.88rem;">
+          Provide details and pin the exact location on the tactical map for first-responder routing.
+        </span>
+      </div>
+
+      <div id="reportAlert" style="display:none; padding:12px; border-radius:6px; margin-bottom:18px; font-size:0.9rem;"></div>
+
+      <form id="reportForm">
+        <div class="form-group">
+          <label>Incident Headline / Title *</label>
+          <input type="text" id="incidentTitle" class="form-control" placeholder="e.g. Tanker Fuel Leak on Expressway" required>
+        </div>
+
+        <div class="form-group">
+          <label>Category *</label>
+          <select id="incidentCategory" class="form-control" required>
+            <option value="fire">Fire Emergency</option>
+            <option value="accident">Traffic / Highway Accident</option>
+            <option value="medical">Medical Emergency</option>
+            <option value="flooding">Flooding / Water Hazard</option>
+            <option value="crime">Public Safety / Security</option>
+            <option value="other">Other Incident</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Detailed Description *</label>
+          <textarea id="incidentDesc" class="form-control" rows="4" placeholder="Detail injuries, hazards, trapped individuals, and landmark reference points..." required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Address or Landmark Reference *</label>
+          <input type="text" id="incidentAddress" class="form-control" placeholder="e.g. Commercial Ave near Yaba Tech, Lagos" required>
+        </div>
+
+        <div class="form-group">
+          <label style="display:flex; justify-content:space-between; align-items:center;">
+            <span><i class="fa-solid fa-map-pin" style="color:var(--accent-critical);"></i> Tactical Pinpoint (Click on map to drop pin)</span>
+            <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">Click anywhere on map to reposition</span>
+          </label>
+          
+          <div id="pickerMap"></div>
+
+          <div class="coord-grid">
+            <div>
+              <label style="font-size:0.8rem; color:var(--text-muted);">Latitude</label>
+              <input type="number" step="any" id="incidentLat" class="form-control" value="6.5244" required readonly style="background:var(--surface2);">
+            </div>
+            <div>
+              <label style="font-size:0.8rem; color:var(--text-muted);">Longitude</label>
+              <input type="number" step="any" id="incidentLng" class="form-control" value="3.3792" required readonly style="background:var(--surface2);">
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" id="submitBtn" class="btn btn-danger btn-lg" style="width:100%; margin-top:16px;">
+          <i class="fa-solid fa-tower-broadcast"></i> Submit Emergency Report
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-bottom">
+      <div>Assigned Student: <strong>Bojuwoye Edeosa</strong></div>
+      <div>&copy; 2026 Emergency Incident Reporting & Response System (EIRRS)</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="../static/main.js"></script>
+
+  <script>
+    const activeUser = getActiveUser();
+    if (!activeUser) {
+      window.location.href = 'http://localhost:5000/login.html';
+    }
+
+    let pickerMap;
+    let selectedMarker;
+
+    function initReportMap() {
+      const defaultLat = 6.5244;
+      const defaultLng = 3.3792;
+      const container = document.getElementById('pickerMap');
+      if (!container) return;
+
+      pickerMap = L.map('pickerMap').setView([defaultLat, defaultLng], 12);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(pickerMap);
+
+      selectedMarker = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(pickerMap);
+
+      selectedMarker.on('dragend', function (e) {
+        const coords = e.target.getLatLng();
+        updateCoordinates(coords.lat, coords.lng);
+      });
+
+      pickerMap.on('click', function (e) {
+        selectedMarker.setLatLng(e.latlng);
+        updateCoordinates(e.latlng.lat, e.latlng.lng);
+      });
+
+      setTimeout(() => { pickerMap.invalidateSize(); }, 250);
+    }
+
+    function updateCoordinates(lat, lng) {
+      document.getElementById('incidentLat').value = Number(lat).toFixed(6);
+      document.getElementById('incidentLng').value = Number(lng).toFixed(6);
+    }
+
+    document.getElementById('reportForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const alertBox = document.getElementById('reportAlert');
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.innerText = "Transmitting to Dispatch...";
+      submitBtn.disabled = true;
+
+      const payload = {
+        user_id: activeUser.id,
+        title: document.getElementById('incidentTitle').value.trim(),
+        category: document.getElementById('incidentCategory').value,
+        description: document.getElementById('incidentDesc').value.trim(),
+        location_address: document.getElementById('incidentAddress').value.trim(),
+        latitude: parseFloat(document.getElementById('incidentLat').value),
+        longitude: parseFloat(document.getElementById('incidentLng').value)
+      };
+
+      try {
+        const res = await fetch('http://localhost:5000/api/incidents', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const text = await res.text();
+        if (!text) throw new Error("Empty response from database engine.");
+
+        const data = JSON.parse(text);
+
+        if (data.success) {
+          alertBox.style.display = 'block';
+          alertBox.style.background = '#dcfce7';
+          alertBox.style.color = '#15803d';
+          alertBox.style.border = '1px solid #86efac';
+          alertBox.innerHTML = `<strong>Emergency Incident Logged!</strong> Ticket #${data.incident_id} created with initial classification: <strong>${data.inferred_severity}</strong>. Forwarding to tactical view...`;
+
+          document.getElementById('reportForm').reset();
+
+          setTimeout(() => {
+            window.location.href = 'http://localhost:5000/incident_map.html';
+          }, 1500);
+        } else {
+          throw new Error(data.error || 'Failed to submit report.');
+        }
+      } catch (err) {
+        alertBox.style.display = 'block';
+        alertBox.style.background = '#fee2e2';
+        alertBox.style.color = '#b91c1c';
+        alertBox.style.border = '1px solid #fca5a5';
+        alertBox.innerHTML = `<strong>Transmission Error:</strong> ${err.message}`;
+        submitBtn.innerHTML = `<i class="fa-solid fa-tower-broadcast"></i> Submit Emergency Report`;
+        submitBtn.disabled = false;
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initReportMap();
+    });
+  </script>
+</body>
+</html>

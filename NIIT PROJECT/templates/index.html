@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Emergency Incident Reporting & Response System (EIRRS)</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="emergency-ticker">
+    <div class="ticker-content">
+      <span class="ticker-badge">Live Ticker</span>
+      <span>National Emergency Management Agency (NEMA) & Lagos State Emergency Lines Open</span>
+    </div>
+    <div style="font-weight:bold;">Toll-Free: 112 / 767</div>
+  </div>
+
+  <header>
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon"><i class="fa-solid fa-truck-medical"></i></div>
+        <div class="brand-text">
+          <h1>EIRRS</h1>
+          <span>Emergency Incident System</span>
+        </div>
+      </a>
+      <nav>
+        <ul>
+          <li><a href="index.html" class="active">Home</a></li>
+          <li><a href="dashboard.html">Dashboard</a></li>
+          <li><a href="report_incident.html">Report Emergency</a></li>
+          <li><a href="incident_map.html">Tactical Map</a></li>
+          <li><a href="profile.html">Profile</a></li>
+        </ul>
+      </nav>
+      <div class="nav-actions" id="navActions"></div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-container">
+      <div class="hero-badge"><i class="fa-solid fa-shield-halved"></i> Central Dispatch & Monitoring Core</div>
+      <h2>Rapid Incident Reporting.<br>Coordinated First Response.</h2>
+      <p>A unified tactical interface connecting citizens with emergency dispatchers for rapid triage, geolocated routing, and real-time response tracking.</p>
+      <div class="hero-cta" id="heroCta"></div>
+    </div>
+  </section>
+
+  <div class="metrics-bar">
+    <div class="metric-card">
+      <div class="metric-number" id="metricTotal">--</div>
+      <div class="metric-label">Logged Incidents</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-number" id="metricActive" style="color:var(--accent-yellow);">--</div>
+      <div class="metric-label">Active / Dispatched</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-number" id="metricCritical" style="color:var(--accent-critical);">--</div>
+      <div class="metric-label">Critical Tier</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-number" id="metricResolved" style="color:var(--accent-green);">--</div>
+      <div class="metric-label">Resolved Safely</div>
+    </div>
+  </div>
+
+  <section class="main-wrapper">
+    <div class="section-title">
+      <h3>Emergency Categorization Grid</h3>
+      <p>Direct priority dispatch routing based on standardized classification.</p>
+    </div>
+
+    <div class="categories-grid">
+      <div class="cat-card">
+        <div class="cat-icon cat-fire"><i class="fa-solid fa-fire"></i></div>
+        <h4>Fire & Gas Outbreaks</h4>
+        <p>Residential, industrial, pipeline, and electrical utility combustion hazards.</p>
+      </div>
+      <div class="cat-card">
+        <div class="cat-icon cat-accident"><i class="fa-solid fa-car-burst"></i></div>
+        <h4>Vehicular Collisions</h4>
+        <p>Expressway gridlock collisions, fuel tanker spills, and trapped motor incidents.</p>
+      </div>
+      <div class="cat-card">
+        <div class="cat-icon cat-medical"><i class="fa-solid fa-heart-pulse"></i></div>
+        <h4>Medical Emergencies</h4>
+        <p>Trauma stabilization, mass casualty transit, and paramedic deployment.</p>
+      </div>
+      <div class="cat-card">
+        <div class="cat-icon cat-flood"><i class="fa-solid fa-cloud-showers-heavy"></i></div>
+        <h4>Severe Flooding</h4>
+        <p>Drainage blockages, storm surges, canal collapses, and stranded residents.</p>
+      </div>
+    </div>
+
+    <div class="hotline-banner">
+      <div class="hotline-text">
+        <h4>Need Instant Voice Assistance?</h4>
+        <p>Direct lines to central dispatch command are open 24/7 across all territorial divisions.</p>
+      </div>
+      <div class="hotline-numbers">
+        <a href="tel:112" class="hotline-chip"><i class="fa-solid fa-phone"></i> 112 (NEMA)</a>
+        <a href="tel:767" class="hotline-chip"><i class="fa-solid fa-phone"></i> 767 (LASEMA)</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-bottom">
+      <div>Assigned Student: <strong>Bojuwoye Edeosa</strong></div>
+      <div>&copy; 2026 Emergency Incident Reporting & Response System (EIRRS)</div>
+    </div>
+  </footer>
+
+  <script src="../static/main.js"></script>
+  <script>
+    async function loadMetrics() {
+      try {
+        const res = await fetch('http://localhost:5000/api/incidents');
+        const json = await res.json();
+        if (json.success) {
+          const list = json.data;
+          document.getElementById('metricTotal').innerText = list.length;
+          document.getElementById('metricActive').innerText = list.filter(i => i.status === 'acknowledged' || i.status === 'dispatched').length;
+          document.getElementById('metricCritical').innerText = list.filter(i => i.severity === 'CRITICAL').length;
+          document.getElementById('metricResolved').innerText = list.filter(i => i.status === 'resolved').length;
+        }
+      } catch (e) {
+        console.error("Metric tally error:", e);
+      }
+    }
+    document.addEventListener('DOMContentLoaded', loadMetrics);
+  </script>
+</body>
+</html>

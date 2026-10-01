@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>User Profile & History | EIRRS</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="emergency-ticker">
+    <div class="ticker-content">
+      <span class="ticker-badge">Personal Account</span>
+      <span>Citizen Dispatch Registry & Activity History</span>
+    </div>
+    <div style="font-weight:bold;">Toll-Free: 112 / 767</div>
+  </div>
+
+  <header>
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon"><i class="fa-solid fa-truck-medical"></i></div>
+        <div class="brand-text">
+          <h1>EIRRS</h1>
+          <span>Emergency Incident System</span>
+        </div>
+      </a>
+      <nav>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="dashboard.html">Dashboard</a></li>
+          <li><a href="report_incident.html">Report Emergency</a></li>
+          <li><a href="incident_map.html">Tactical Map</a></li>
+          <li><a href="profile.html" class="active">Profile</a></li>
+        </ul>
+      </nav>
+      <div class="nav-actions">
+        <button onclick="toggleTheme()" class="btn btn-outline btn-sm" style="border:none;" title="Toggle Theme">
+          <i id="themeIcon" class="fa-solid fa-sun"></i>
+        </button>
+        <button onclick="handleLogout()" class="btn btn-outline btn-sm">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="main-wrapper" style="max-width: 1000px;">
+    <!-- Profile Details Card -->
+    <div class="card" style="margin-bottom:24px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; border-bottom:1px solid var(--border-color); padding-bottom:16px; margin-bottom:16px;">
+        <div style="display:flex; align-items:center; gap:16px;">
+          <div style="width:56px; height:56px; border-radius:50%; background:var(--primary); color:white; display:flex; align-items:center; justify-content:center; font-size:1.5rem; font-weight:800;">
+            <i class="fa-solid fa-user"></i>
+          </div>
+          <div>
+            <h2 id="profileName" style="font-size:1.35rem; color:var(--text-main); font-weight:800; margin-bottom:2px;">Loading...</h2>
+            <span id="profileRoleBadge" class="badge" style="background:var(--surface2); color:var(--text-muted);">CITIZEN</span>
+          </div>
+        </div>
+        <a href="report_incident.html" class="btn btn-danger btn-sm">
+          <i class="fa-solid fa-bullhorn"></i> File New Incident
+        </a>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; font-size:0.9rem;">
+        <div>
+          <span style="color:var(--text-muted); display:block; font-size:0.75rem; text-transform:uppercase; font-weight:700;">Email Address</span>
+          <strong id="profileEmail" style="color:var(--text-main);">...</strong>
+        </div>
+        <div>
+          <span style="color:var(--text-muted); display:block; font-size:0.75rem; text-transform:uppercase; font-weight:700;">Emergency Phone</span>
+          <strong id="profilePhone" style="color:var(--text-main);">...</strong>
+        </div>
+        <div>
+          <span style="color:var(--text-muted); display:block; font-size:0.75rem; text-transform:uppercase; font-weight:700;">Account Clearance</span>
+          <strong id="profileRole" style="color:var(--primary);">...</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- User's Incident History -->
+    <div class="card" style="padding:0; overflow:hidden;">
+      <div style="padding:16px 20px; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="font-size:1.1rem; font-weight:800; color:var(--text-main);">
+          <i class="fa-solid fa-clock-rotate-left" style="color:var(--primary);"></i> My Incident Submissions
+        </h3>
+        <span style="font-size:0.8rem; color:var(--text-muted);">Read-Only Audit Trail</span>
+      </div>
+
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Ticket</th>
+              <th>Emergency Title</th>
+              <th>Location</th>
+              <th>Priority</th>
+              <th>Dispatch Status</th>
+              <th>Logged Date</th>
+            </tr>
+          </thead>
+          <tbody id="userIncidentsTable">
+            <tr>
+              <td colspan="6" style="text-align:center; padding:30px; color:var(--text-muted);">
+                <i class="fa-solid fa-spinner fa-spin"></i> Retrieving your records...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-bottom" style="border:none; padding:0;">
+      <div>Assigned Student: <strong>Bojuwoye Edeosa</strong></div>
+      <div>&copy; 2026 Emergency Incident Reporting & Response System</div>
+    </div>
+  </footer>
+
+  <script src="../static/main.js"></script>
+  <script>
+    const user = getActiveUser();
+    if (!user) {
+      window.location.href = 'http://localhost:5000/login.html';
+    }
+
+    // Populate user profile information
+    document.getElementById('profileName').innerText = user.full_name;
+    document.getElementById('profileEmail').innerText = user.email;
+    document.getElementById('profilePhone').innerText = user.phone_number || 'Not Provided';
+    document.getElementById('profileRole').innerText = user.role.toUpperCase();
+    document.getElementById('profileRoleBadge').innerText = user.role.toUpperCase();
+    if (user.role === 'admin') {
+      document.getElementById('profileRoleBadge').style.background = '#fef3c7';
+      document.getElementById('profileRoleBadge').style.color = '#b45309';
+    }
+
+    // Fetch incidents and filter to current user
+    async function loadUserIncidents() {
+      const tbody = document.getElementById('userIncidentsTable');
+      try {
+        const res = await fetch('http://localhost:5000/api/incidents');
+        const json = await res.json();
+
+        if (!json.success) throw new Error(json.error);
+
+        // Filter: Admin sees all if desired, or citizen sees strictly their own
+        const userReports = (user.role === 'admin') 
+          ? json.data 
+          : json.data.filter(inc => inc.user_id === user.id);
+
+        if (userReports.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="6" style="text-align:center; padding:35px; color:var(--text-muted);">
+                <i class="fa-solid fa-circle-info" style="font-size:1.5rem; margin-bottom:8px; display:block; color:var(--primary);"></i>
+                You have not filed any emergency incidents yet.
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        tbody.innerHTML = userReports.map(inc => `
+          <tr>
+            <td><strong>#${inc.id}</strong></td>
+            <td>
+              <div style="font-weight:700; color:var(--text-main); font-size:0.95rem;">${inc.title}</div>
+              <div style="font-size:0.8rem; color:var(--text-muted); max-width:280px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${inc.description}</div>
+            </td>
+            <td style="font-size:0.85rem;"><i class="fa-solid fa-location-dot" style="color:var(--accent-critical);"></i> ${inc.location_address || 'Lagos'}</td>
+            <td><span class="badge badge-${inc.severity}">${inc.severity}</span></td>
+            <td><span class="badge badge-${inc.status}">${inc.status}</span></td>
+            <td style="font-size:0.8rem; color:var(--text-muted);">${formatDate(inc.created_at)}</td>
+          </tr>
+        `).join('');
+
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--accent-critical);">Error loading reports: ${err.message}</td></tr>`;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadUserIncidents);
+  </script>
+</body>
+</html>

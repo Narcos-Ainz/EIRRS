@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Operations Dashboard | EIRRS</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="emergency-ticker">
+    <div class="ticker-content">
+      <span class="ticker-badge">Live Command</span>
+      <span>Operations & Incident Dispatch Center</span>
+    </div>
+    <div style="font-weight:bold;">Toll-Free: 112 / 767</div>
+  </div>
+
+  <header>
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon"><i class="fa-solid fa-truck-medical"></i></div>
+        <div class="brand-text">
+          <h1>EIRRS</h1>
+          <span>Emergency Incident System</span>
+        </div>
+      </a>
+      <nav>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="dashboard.html" class="active">Dashboard</a></li>
+          <li><a href="report_incident.html">Report Emergency</a></li>
+          <li><a href="incident_map.html">Tactical Map</a></li>
+          <li><a href="profile.html">Profile</a></li>
+        </ul>
+      </nav>
+      <div class="nav-actions">
+        <button onclick="toggleTheme()" class="btn btn-outline btn-sm" style="border:none;" title="Toggle Theme">
+          <i id="themeIcon" class="fa-solid fa-sun"></i>
+        </button>
+        <button onclick="handleLogout()" class="btn btn-outline btn-sm">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="main-wrapper">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; flex-wrap:wrap; gap:12px;">
+      <div>
+        <h2 style="font-size:1.8rem; font-weight:800; color:var(--text-main);">
+          <i class="fa-solid fa-gauge-high" style="color:var(--primary);"></i> Operations Incident Queue
+        </h2>
+        <p style="color:var(--text-muted); font-size:0.95rem;">Verify, prioritize, and dispatch units to active citizen reports.</p>
+      </div>
+      <button onclick="loadDashboardIncidents()" class="btn btn-outline btn-sm">
+        <i class="fa-solid fa-arrows-rotate"></i> Refresh Feed
+      </button>
+    </div>
+
+    <!-- Live Status Notice Banner -->
+    <div id="statusBanner" style="display:none; padding:12px 16px; border-radius:6px; margin-bottom:18px; font-weight:600;"></div>
+
+    <div class="card" style="padding:0; overflow:hidden;">
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Incident Details</th>
+              <th>Location</th>
+              <th>Severity</th>
+              <th>Status</th>
+              <th>Admin Action</th>
+            </tr>
+          </thead>
+          <tbody id="incidentsTableBody">
+            <tr>
+              <td colspan="6" style="text-align:center; padding:30px; color:var(--text-muted);">
+                <i class="fa-solid fa-spinner fa-spin"></i> Loading incident feed...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-bottom" style="border:none; padding:0;">
+      <div>Assigned Student: <strong>Bojuwoye Edeosa</strong></div>
+      <div>&copy; 2026 Emergency Incident Reporting & Response System</div>
+    </div>
+  </footer>
+  <!-- Tactical Audio-Visual Alert Container -->
+  <div id="adminNotificationToast" style="
+    display: none;
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    background: #1e293b;
+    border: 2px solid var(--accent-critical);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+    border-radius: 8px;
+    padding: 16px 20px;
+    z-index: 99999;
+    max-width: 380px;
+    color: #f8fafc;
+    animation: slideIn 0.3s ease-out;
+  ">
+    <div style="display:flex; align-items:flex-start; gap:12px;">
+      <div style="font-size: 1.5rem; color: var(--accent-critical);">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <div style="flex:1;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <strong style="text-transform:uppercase; font-size:0.8rem; letter-spacing:0.5px; color:#fca5a5;">Incoming Emergency</strong>
+          <span id="toastTime" style="font-size:0.75rem; color:var(--text-muted);">Just now</span>
+        </div>
+        <h4 id="toastTitle" style="font-size:1rem; margin-bottom:4px; color:#ffffff;">Fire Outbreak</h4>
+        <p id="toastDesc" style="font-size:0.8rem; color:#cbd5e1; margin-bottom:8px; line-height:1.4;">Details...</p>
+        <span id="toastBadge" class="badge badge-CRITICAL">CRITICAL</span>
+      </div>
+      <button onclick="document.getElementById('adminNotificationToast').style.display='none'" style="background:none; border:none; color:#94a3b8; cursor:pointer; font-size:1rem;">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  </div>
+
+  <script src="../static/main.js"></script>
+  <script>
+    const user = getActiveUser();
+    if (!user) {
+      window.location.href = 'http://localhost:5000/login.html';
+    }
+
+    const isAdmin = (user.role === 'admin');
+    let lastKnownMaxIncidentId = 0;
+    let isInitialLoad = true;
+
+    // 1. Synthesize Native Dispatch Beep (Zero external files needed)
+    function playEmergencyAlertSound() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Tone 1: High frequency burst
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime); // 880Hz (A5)
+        osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.3);
+        
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+      } catch (e) {
+        console.warn("Audio alert prevented by browser autoplay policy until user interacts with the page.");
+      }
+    }
+
+    // 2. Display Tactical Toast Alert
+    function triggerIncidentAlert(incident) {
+      const toast = document.getElementById('adminNotificationToast');
+      document.getElementById('toastTitle').innerText = incident.title;
+      document.getElementById('toastDesc').innerText = incident.description.substring(0, 80) + '...';
+      
+      const badge = document.getElementById('toastBadge');
+      badge.className = `badge badge-${incident.severity}`;
+      badge.innerText = incident.severity;
+
+      toast.style.display = 'block';
+      playEmergencyAlertSound();
+
+      // Auto-hide alert after 8 seconds
+      setTimeout(() => {
+        toast.style.display = 'none';
+      }, 8000);
+    }
+
+    // 3. Fetch Incidents and Poll for Newly Logged Reports
+    async function loadDashboardIncidents() {
+      const tbody = document.getElementById('incidentsTableBody');
+      try {
+        const res = await fetch('http://localhost:5000/api/incidents');
+        const json = await res.json();
+
+        if (!json.success || json.data.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px; color:var(--text-muted);">No incident records logged.</td></tr>`;
+          return;
+        }
+
+        const incidents = json.data;
+        const currentMaxId = Math.max(...incidents.map(i => i.id));
+
+        // Detect if a brand new report arrived while admin was on this page
+        if (!isInitialLoad && currentMaxId > lastKnownMaxIncidentId && isAdmin) {
+          const newestIncident = incidents.find(i => i.id === currentMaxId);
+          if (newestIncident) {
+            triggerIncidentAlert(newestIncident);
+          }
+        }
+
+        lastKnownMaxIncidentId = currentMaxId;
+        isInitialLoad = false;
+
+        // Render table records
+        tbody.innerHTML = incidents.map(inc => {
+          let actionCell = '';
+
+          if (isAdmin) {
+            if (inc.status === 'reported') {
+              actionCell = `
+                <div style="display:flex; gap:6px;">
+                  <button onclick="updateIncidentStatus(${inc.id}, 'acknowledged')" class="btn btn-sm btn-primary" style="padding:4px 10px; font-size:0.75rem;">
+                    <i class="fa-solid fa-check"></i> Verify
+                  </button>
+                  <button onclick="updateIncidentStatus(${inc.id}, 'rejected')" class="btn btn-sm btn-outline" style="color:var(--accent-critical); border-color:var(--accent-critical); padding:4px 8px; font-size:0.75rem;">
+                    <i class="fa-solid fa-xmark"></i> Reject
+                  </button>
+                </div>
+              `;
+            } else if (inc.status === 'acknowledged') {
+              actionCell = `
+                <button onclick="updateIncidentStatus(${inc.id}, 'dispatched')" class="btn btn-sm" style="background:#ea580c; color:white; padding:4px 10px; font-size:0.75rem;">
+                  <i class="fa-solid fa-truck-fast"></i> Dispatch
+                </button>
+              `;
+            } else if (inc.status === 'dispatched') {
+              actionCell = `
+                <button onclick="updateIncidentStatus(${inc.id}, 'resolved')" class="btn btn-sm" style="background:var(--accent-green); color:white; padding:4px 10px; font-size:0.75rem;">
+                  <i class="fa-solid fa-circle-check"></i> Resolve
+                </button>
+              `;
+            } else {
+              actionCell = `<span style="color:var(--text-muted); font-size:0.8rem;"><i class="fa-solid fa-lock"></i> Closed</span>`;
+            }
+          } else {
+            actionCell = `<span style="color:var(--text-muted); font-size:0.8rem;"><i class="fa-solid fa-shield"></i> Read-Only</span>`;
+          }
+
+          return `
+            <tr>
+              <td><strong>#${inc.id}</strong></td>
+              <td>
+                <div style="font-weight:700; color:var(--text-main); font-size:0.95rem;">${inc.title}</div>
+                <div style="font-size:0.8rem; color:var(--text-muted); max-width:320px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${inc.description}</div>
+              </td>
+              <td style="font-size:0.85rem;"><i class="fa-solid fa-location-dot" style="color:var(--accent-critical);"></i> ${inc.location_address || 'Lagos'}</td>
+              <td><span class="badge badge-${inc.severity}">${inc.severity}</span></td>
+              <td><span class="badge badge-${inc.status}">${inc.status}</span></td>
+              <td>${actionCell}</td>
+            </tr>
+          `;
+        }).join('');
+
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--accent-critical);">Error: ${err.message}</td></tr>`;
+      }
+    }
+
+    async function updateIncidentStatus(incidentId, newStatus) {
+      const banner = document.getElementById('statusBanner');
+      try {
+        const res = await fetch(`http://localhost:5000/api/incidents/${incidentId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            status: newStatus,
+            responder_id: user.id,
+            notes: `Status changed to ${newStatus.toUpperCase()} by Operations Desk.`
+          })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          banner.style.display = 'block';
+          banner.style.background = '#dcfce7';
+          banner.style.color = '#15803d';
+          banner.innerHTML = `<i class="fa-solid fa-circle-check"></i> Incident #${incidentId} transitioned to <strong>${newStatus.toUpperCase()}</strong>.`;
+          loadDashboardIncidents();
+          setTimeout(() => { banner.style.display = 'none'; }, 3000);
+        } else {
+          alert('Update error: ' + (data.error || 'Server error'));
+        }
+      } catch (err) {
+        alert('Transmission error: ' + err.message);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadDashboardIncidents();
+      // Poll every 4 seconds so the admin receives instant updates
+      setInterval(loadDashboardIncidents, 4000);
+    });
+  </script>
+
+
+</body>
+</html>
