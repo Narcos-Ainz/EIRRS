@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Citizen Registration | EIRRS</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body style="justify-content:center; align-items:center;">
+  <div class="card" style="width:100%; max-width:440px; padding:32px; margin:40px auto;">
+    <div style="text-align:center; margin-bottom:24px;">
+      <a href="./index.html">
+      <div class="brand-icon" style="margin:0 auto 12px; width:48px; height:48px; font-size:1.5rem;">
+        <i class="fa-solid fa-user-plus"></i>
+      </a>
+      </div>
+      <h2 style="font-size:1.5rem; font-weight:800;">Citizen Registration</h2>
+      <p style="color:var(--text-muted); font-size:0.85rem;">Create an emergency audit profile</p>
+    </div>
+
+    <div id="regAlert" style="display:none; padding:10px; border-radius:6px; margin-bottom:16px; font-size:0.85rem;"></div>
+
+    <form id="regForm">
+    <div class="form-group">
+  <label>First Name *</label>
+  <input type="text" id="regName" class="form-control" placeholder="e.g. Anthony" required>
+  </div>
+
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="regEmail" class="form-control" placeholder="citizen@example.com" required>
+      </div>
+
+     <div class="form-group">
+  <label>Emergency Contact Phone (11 Digits) *</label>
+  <input type="text" id="regPhone" class="form-control" placeholder="08012345678" inputmode="numeric"minlength="11"maxlength="11"pattern="[0-9]{11}"oninput="this.value = this.value.replace(/[^0-9]/g, '')"required>
+</div>
+
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="regPassword" class="form-control" placeholder="••••••••" required>
+      </div>
+
+      <button type="submit" id="regBtn" class="btn btn-primary" style="width:100%; justify-content:center; margin-top:8px;">
+        Register Account
+      </button>
+    </form>
+
+    <div style="text-align:center; margin-top:20px; font-size:0.85rem; color:var(--text-muted);">
+      Already registered? <a href="login.html" style="color:var(--primary); font-weight:700;">Sign In</a>
+    </div>
+  </div>
+
+
+<script src="/static/main.js"></script>
+  <script src="/static/main.js"></script>
+<script>
+  // Pure JavaScript First Name & Email Validator
+  function validateFirstName(name) {
+    const trimmed = name.trim();
+
+    // 1. Single word only (no spaces)
+    if (/\s/.test(trimmed)) {
+      return "Please enter your first name only (no spaces or surnames).";
+    }
+
+    // 2. Length check (between 2 and 20 characters)
+    if (trimmed.length < 2 || trimmed.length > 20) {
+      return "First name must be between 2 and 20 letters.";
+    }
+
+    // 3. Letters, hyphens, and apostrophes only (no numbers or special characters)
+    if (!/^[a-zA-ZÀ-ÿ'-]+$/.test(trimmed)) {
+      return "First name can only contain letters.";
+    }
+
+    // 4. Reject 3 repeating letters in a row (e.g. 'Aaaa', 'Jooohn')
+    if (/(.)\1\1/i.test(trimmed)) {
+      return "First name contains unrealistic repeating letters.";
+    }
+
+    // 5. Must contain at least one vowel (a, e, i, o, u, y) to block keysmashes like 'zxcvb'
+    if (!/[aeiouy]/i.test(trimmed)) {
+      return "Please enter a readable, realistic first name.";
+    }
+
+    // 6. Block obvious placeholder names
+    const banned = ['test', 'admin', 'user', 'dummy', 'none', 'null', 'fake', 'asdf', 'qwerty', 'anonymous'];
+    if (banned.includes(trimmed.toLowerCase())) {
+      return "Test or placeholder names are not allowed.";
+    }
+
+    return null; // Valid
+  }
+
+  function validateEmail(email) {
+  const trimmed = email.trim().toLowerCase();
+
+  // 1. Basic format check: name@domain.extension
+  const baseRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  if (!baseRegex.test(trimmed)) {
+    return "Please enter a valid email format (e.g. name@gmail.com).";
+  }
+
+  
+  const allowedExtensions = [
+    '.com',
+    '.net',
+    '.org',
+    '.edu',
+    '.gov',
+    '.ng',          
+    '.com.ng',      
+    '.edu.ng',     
+    '.gov.ng',      
+    '.co.uk',
+    '.io'
+  ];
+
+  // 3. Check if email ends with any of the approved extensions
+  const hasValidExtension = allowedExtensions.some(ext => trimmed.endsWith(ext));
+  if (!hasValidExtension) {
+    return "Email must end with a standard extension (such as .com, .org, .edu.ng, or .ng).";
+  }
+
+  // 4. Block common fake/test domains
+  const fakeDomains = ['test.com', 'fake.com', 'temp.com', 'example.com', 'mailinator.com', 'asdf.com', '123.com'];
+  const domainPart = trimmed.split('@')[1];
+  if (fakeDomains.includes(domainPart)) {
+    return "Disposable or mock email domains are not allowed.";
+  }
+
+  return null; // Valid!
+}
+  function validatePhoneNumber(phone) {
+  // Strip any accidental spaces or dashes
+  const cleanPhone = phone.trim().replace(/[\s-]/g, '');
+
+  // 1. Must be strictly numbers
+  if (!/^\d+$/.test(cleanPhone)) {
+    return "Phone number must contain digits only.";
+  }
+
+  // 2. Must be EXACTLY 11 digits long
+  if (cleanPhone.length !== 11) {
+    return `Phone number must be exactly 11 digits. You entered ${cleanPhone.length}.`;
+  }
+
+  // 3. Nigerian mobile prefix check (must start with 07, 08, or 09)
+  if (!/^(07|08|09)\d{9}$/.test(cleanPhone)) {
+    return "Phone number must begin with a valid prefix (e.g. 080, 081, 070, 090, 091).";
+  }
+
+  return null; // Valid
+}
+  document.getElementById('regForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const firstName = document.getElementById('regName').value;
+  const email = document.getElementById('regEmail').value;
+  const phone = document.getElementById('regPhone').value;
+  const password = document.getElementById('regPassword').value;
+
+  // 1. First Name Check
+  const nameError = validateFirstName(firstName);
+  if (nameError) {
+    showAlert(nameError);
+    return;
+  }
+
+  // 2. Email Check
+  const emailError = validateEmail(email);
+  if (emailError) {
+    showAlert(emailError);
+    return;
+  }
+
+  // 3. STRICT 11-DIGIT PHONE CHECK
+  const phoneError = validatePhoneNumber(phone);
+  if (phoneError) {
+    showAlert(phoneError);
+    return; // Stops submission immediately if not 11 digits
+  }
+
+  // 4. Password Check
+  if (password.length < 6) {
+    showAlert("Password must be at least 6 characters.");
+    return;
+  }
+
+  // Proceed with registration fetch...
+  btn.innerText = "Registering...";
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('http://localhost:5000/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        full_name: firstName.trim(),
+        email: email.trim().toLowerCase(),
+        phone_number: phone.trim(),
+        password: password
+      })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      alertBox.style.display = 'block';
+      alertBox.style.background = '#dcfce7';
+      alertBox.style.color = '#15803d';
+      alertBox.style.border = '1px solid #86efac';
+      alertBox.innerText = "Registration complete! Redirecting to sign in...";
+      setTimeout(() => { window.location.href = 'login.html'; }, 1500);
+    } else {
+      throw new Error(data.error || 'Registration failed');
+    }
+  } catch (err) {
+    showAlert(err.message);
+    btn.innerText = "Register Account";
+    btn.disabled = false;
+  }
+});
+  function showAlert(message) {
+    const alertBox = document.getElementById('regAlert');
+    alertBox.style.display = 'block';
+    alertBox.style.background = '#fee2e2';
+    alertBox.style.color = '#b91c1c';
+    alertBox.style.border = '1px solid #fca5a5';
+    alertBox.innerText = message;
+  }
+
+  document.getElementById('regForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const firstName = document.getElementById('regName').value;
+    const email = document.getElementById('regEmail').value;
+    const phone = document.getElementById('regPhone').value.trim();
+    const password = document.getElementById('regPassword').value;
+    const alertBox = document.getElementById('regAlert');
+    const btn = document.getElementById('regBtn');
+
+    // 1. Run First Name Validation (Pure JS)
+    const nameError = validateFirstName(firstName);
+    if (nameError) {
+      showAlert(nameError);
+      return;
+    }
+
+    // 2. Run Email Validation (Pure JS)
+    const emailError = validateEmail(email);
+    if (emailError) {
+      showAlert(emailError);
+      return;
+    }
+
+    // 3. Password check
+    if (password.length < 6) {
+      showAlert("Password must be at least 6 characters.");
+      return;
+    }
+
+    // Clear alert and proceed to submit
+    alertBox.style.display = 'none';
+    btn.innerText = "Registering...";
+    btn.disabled = true;
+
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_name: firstName.trim(),
+          email: email.trim().toLowerCase(),
+          phone_number: phone,
+          password: password
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        alertBox.style.display = 'block';
+        alertBox.style.background = '#dcfce7';
+        alertBox.style.color = '#15803d';
+        alertBox.style.border = '1px solid #86efac';
+        alertBox.innerText = "Registration complete! Redirecting to sign in...";
+        setTimeout(() => { window.location.href = 'login.html'; }, 1500);
+      } else {
+        throw new Error(data.error || 'Registration failed');
+      }
+    } catch (err) {
+      showAlert(err.message);
+      btn.innerText = "Register Account";
+      btn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

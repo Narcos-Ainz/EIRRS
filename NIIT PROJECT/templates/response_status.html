@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Response Status Dispatch | EIRRS</title>
+  <link rel="stylesheet" href="../static/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="emergency-ticker">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span class="ticker-badge">Live Advisory</span>
+      <span>Emergency response lines operational 24/7 across Lagos state</span>
+    </div>
+    <div style="font-weight:bold;">Toll-Free: 112 / 767</div>
+  </div>
+  <header>
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon"><i class="fa-solid fa-truck-medical"></i></div>
+        <div class="brand-text">
+          <h1>EIRRS</h1>
+          <span>Emergency Incident System</span>
+        </div>
+      </a>
+      <nav>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="report_incident.html">Report</a></li>
+          <li><a href="incident_map.html">Tactical Map</a></li>
+          <li><a href="my_reports.html">My Reports</a></li>
+          <li><a href="response_status.html" class="active">Dispatch</a></li>
+          <li><a href="analytics.html">Analytics</a></li>
+        </ul>
+      </nav>
+      <div class="nav-actions">
+        <a href="dashboard.html" class="btn btn-outline btn-sm">Command View</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="main-wrapper">
+    <h2><i class="fa-solid fa-tower-broadcast"></i> Dispatch & Operational Status Control</h2>
+    <p style="color:var(--text-secondary); margin-bottom:20px;">First responder and coordinator triage dashboard for status management.</p>
+
+    <div class="card">
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Incident</th>
+              <th>Severity</th>
+              <th>Current Status</th>
+              <th>Update Status</th>
+            </tr>
+          </thead>
+          <tbody id="dispatchTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="../static/main.js"></script>
+  <script>
+    async function loadTable() {
+      const res = await fetchIncidents();
+      const tb = document.getElementById('dispatchTable');
+      tb.innerHTML = '';
+      res.data.forEach(inc => {
+        tb.innerHTML += `
+          <tr>
+            <td>#${inc.id}</td>
+            <td><strong>${inc.title}</strong></td>
+            <td><span class="badge badge-${inc.severity}">${inc.severity}</span></td>
+            <td><span class="badge badge-${inc.status}">${inc.status}</span></td>
+            <td>
+              <select onchange="updateStatus(${inc.id}, this.value)" class="form-control" style="width:160px; display:inline-block;">
+                <option value="">Update Status...</option>
+                <option value="acknowledged">Acknowledged</option>
+                <option value="dispatched">Dispatched</option>
+                <option value="resolved">Resolved</option>
+                <option value="closed">Closed</option>
+              </select>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    async function updateStatus(id, newStatus) {
+      if(!newStatus) return;
+      await fetch(`/api/incidents/${id}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({status: newStatus, notes: `Operational status updated to ${newStatus}.`})
+      });
+      loadTable();
+    }
+    loadTable();
+  </script>
+</body>
+</html>

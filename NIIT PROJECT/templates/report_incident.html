@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Report Incident | EIRRS</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+  <style>
+    #pickerMap {
+      width: 100%;
+      height: 340px;
+      min-height: 340px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      margin-top: 8px;
+      margin-bottom: 12px;
+      position: relative;
+      z-index: 1;
+    }
+    .coord-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="emergency-ticker">
+    <div class="ticker-content">
+      <span class="ticker-badge">Live Advisory</span>
+      <span>Emergency response lines operational 24/7 across Lagos state</span>
+    </div>
+    <div style="font-weight:bold;">Toll-Free: 112 / 767</div>
+  </div>
+
+  <header>
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon"><i class="fa-solid fa-truck-medical"></i></div>
+        <div class="brand-text">
+          <h1>EIRRS</h1>
+          <span>Emergency Incident System</span>
+        </div>
+      </a>
+      <nav>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="dashboard.html">Dashboard</a></li>
+          <li><a href="report_incident.html" class="active">Report Emergency</a></li>
+          <li><a href="incident_map.html">Tactical Map</a></li>
+          <li><a href="profile.html">Profile</a></li>
+        </ul>
+      </nav>
+      <div class="nav-actions">
+        <button onclick="toggleTheme()" class="btn btn-outline btn-sm" style="border:none;" title="Toggle Theme">
+          <i id="themeIcon" class="fa-solid fa-sun"></i>
+        </button>
+        <button onclick="handleLogout()" class="btn btn-outline btn-sm">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="main-wrapper" style="max-width: 760px;">
+    <div class="card">
+      <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 14px; margin-bottom: 20px;">
+        <h2 style="color: var(--text-main); margin-bottom: 4px;">
+          <i class="fa-solid fa-tower-broadcast" style="color: var(--primary);"></i> Transmit Emergency Incident
+        </h2>
+        <span style="color: var(--text-muted); font-size: 0.88rem;">
+          Provide details and pin the exact location on the tactical map for first-responder routing.
+        </span>
+      </div>
+
+      <div id="reportAlert" style="display:none; padding:12px; border-radius:6px; margin-bottom:18px; font-size:0.9rem;"></div>
+
+      <form id="reportForm">
+        <!-- 1. Headline / Title -->
+        <div class="form-group">
+          <label>Incident Headline / Title *</label>
+          <input 
+            type="text" 
+            id="incidentTitle" 
+            class="form-control" 
+            placeholder="e.g. Fuel Tanker Leakage near Commercial Avenue" 
+            required
+          >
+          <small style="color:var(--text-muted); font-size:0.78rem; margin-top:3px; display:block;">
+            Brief headline summarizing the crisis (at least 2 descriptive words).
+          </small>
+        </div>
+
+        <!-- 2. Category Selection -->
+        <div class="form-group">
+          <label>Category *</label>
+          <select id="incidentCategory" class="form-control" required>
+            <option value="fire">Fire Emergency</option>
+            <option value="accident">Traffic / Highway Accident</option>
+            <option value="medical">Medical Emergency</option>
+            <option value="flooding">Flooding / Water Hazard</option>
+            <option value="crime">Public Safety / Security</option>
+            <option value="other">Other Incident</option>
+          </select>
+        </div>
+
+        <!-- 3. Detailed Description -->
+        <div class="form-group">
+          <label>Detailed Description *</label>
+          <textarea 
+            id="incidentDesc" 
+            class="form-control" 
+            rows="4" 
+            placeholder="Detail any trapped individuals, active fires, traffic obstruction, or immediate dangers..." 
+            required
+          ></textarea>
+          <small style="color:var(--text-muted); font-size:0.78rem; margin-top:3px; display:block;">
+            Provide actionable details for dispatchers (minimum 15 characters, 4 words).
+          </small>
+        </div>
+
+        <!-- 4. Address -->
+        <div class="form-group">
+          <label style="display:flex; justify-content:space-between; align-items:center;">
+            <span>Address or Landmark Reference *</span>
+            <span id="geoLookupStatus" style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;"></span>
+          </label>
+          <input 
+            type="text" 
+            id="incidentAddress" 
+            class="form-control" 
+            placeholder="e.g. 14 Commercial Avenue, Sabo, Yaba, Lagos" 
+            required
+          >
+          <small style="color:var(--text-muted); font-size:0.78rem; margin-top:4px; display:block;">
+            Tip: Click anywhere on the map below to automatically drop a pin and resolve the physical street address.
+          </small>
+        </div>
+
+        <!-- 5. Tactical Geolocation Map -->
+        <div class="form-group">
+          <label style="display:flex; justify-content:space-between; align-items:center;">
+            <span><i class="fa-solid fa-map-pin" style="color:var(--accent-critical);"></i> Tactical Pinpoint (Click on map to drop pin)</span>
+            <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">Click anywhere to reposition</span>
+          </label>
+          
+          <div id="pickerMap"></div>
+
+          <div class="coord-grid">
+            <div>
+              <label style="font-size:0.8rem; color:var(--text-muted);">Latitude</label>
+              <input type="number" step="any" id="incidentLat" class="form-control" value="6.5244" required readonly style="background:var(--surface2);">
+            </div>
+            <div>
+              <label style="font-size:0.8rem; color:var(--text-muted);">Longitude</label>
+              <input type="number" step="any" id="incidentLng" class="form-control" value="3.3792" required readonly style="background:var(--surface2);">
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" id="submitBtn" class="btn btn-danger btn-lg" style="width:100%; margin-top:16px;">
+          <i class="fa-solid fa-tower-broadcast"></i> Submit Emergency Report
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-bottom">
+      <div>Assigned Student: <strong>Okongwu Emmanuel</strong></div>
+      <div>&copy; 2026 Emergency Incident Reporting & Response System (EIRRS)</div>
+    </div>
+  </footer>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="/static/main.js"></script>
+
+  <script>
+    const activeUser = getActiveUser();
+    if (!activeUser) {
+      window.location.href = 'http://localhost:5000/login.html';
+    }
+
+    let pickerMap;
+    let selectedMarker;
+
+    // -------------------------------------------------------------
+    // 1. Validation Logic
+    // -------------------------------------------------------------
+
+    // A. Title / Headline Validation
+    function validateIncidentTitle(title) {
+      const trimmed = title.trim();
+
+      if (trimmed.length < 6) {
+        return "Headline is too short. Please provide a clear, descriptive title (at least 6 characters).";
+      }
+
+      if (trimmed.length > 70) {
+        return "Headline is too long (keep under 70 characters).";
+      }
+
+      const words = trimmed.split(/\s+/).filter(w => w.length > 0);
+      if (words.length < 2) {
+        return "Headline must be at least two words (e.g., 'Transformer Fire', 'Expressway Accident').";
+      }
+
+      if (/^\d+$/.test(trimmed.replace(/[\s,.-]/g, ''))) {
+        return "Headline cannot consist only of numbers.";
+      }
+
+      // Block placeholder titles
+      const bannedTitles = ['help', 'help me', 'emergency', 'accident', 'fire', 'test', 'incident', 'something happened', 'problem'];
+      if (bannedTitles.includes(trimmed.toLowerCase())) {
+        return "Please enter a specific headline describing the emergency.";
+      }
+
+      return null;
+    }
+
+    // B. Description Validation
+    function validateIncidentDescription(desc) {
+      const trimmed = desc.trim();
+
+      if (trimmed.length < 15) {
+        return "Description is too brief. Provide more details for first responders (minimum 15 characters).";
+      }
+
+      if (trimmed.length > 600) {
+        return "Description is too lengthy (keep under 600 characters).";
+      }
+
+      const words = trimmed.split(/\s+/).filter(w => w.length > 0);
+      if (words.length < 4) {
+        return "Please describe the situation in at least 4 meaningful words.";
+      }
+
+      // Reject repeating character spam (e.g. 'heeeeeeeellppppppp')
+      if (/(.)\1{4,}/i.test(trimmed)) {
+        return "Description contains unrealistic repeated letters. Please write clearly.";
+      }
+
+      // Reject consonant-only keyboard mash
+      const hasConsonantMash = words.some(w => w.length >= 6 && !/[aeiouy]/i.test(w));
+      if (hasConsonantMash) {
+        return "Description appears to contain unreadable or invalid words.";
+      }
+
+      return null;
+    }
+
+    // C. Address Validation
+    function validateIncidentAddress(address) {
+      const trimmed = address.trim();
+
+      if (trimmed.length < 8) {
+        return "Address is too brief. Provide a specific street, landmark, or intersection.";
+      }
+
+      if (trimmed.length > 150) {
+        return "Address description is too long (keep under 150 characters).";
+      }
+
+      const words = trimmed.split(/\s+/).filter(w => w.length > 0);
+      if (words.length < 2) {
+        return "Please include both a street/landmark and an area (e.g. 'Broad Street, Marina').";
+      }
+
+      if (/^\d+$/.test(trimmed.replace(/[\s,.-]/g, ''))) {
+        return "Address cannot contain numbers only. Include the street or area name.";
+      }
+
+      const hasConsonantKeysmash = words.some(w => w.length >= 5 && !/[aeiouy]/i.test(w));
+      if (hasConsonantKeysmash) {
+        return "The address entered appears to contain unreadable or invalid characters.";
+      }
+
+      const banned = ['somewhere', 'anywhere', 'my house', 'my place', 'unknown', 'nigeria', 'lagos', 'here', 'there', 'test address', 'asdfgh'];
+      if (banned.includes(trimmed.toLowerCase())) {
+        return "Please enter a genuine, recognizable physical address.";
+      }
+
+      return null;
+    }
+
+    // -------------------------------------------------------------
+    // 2. OpenStreetMap Reverse Geocoding
+    // -------------------------------------------------------------
+    async function reverseGeocode(lat, lng) {
+      const statusEl = document.getElementById('geoLookupStatus');
+      const addressInput = document.getElementById('incidentAddress');
+      statusEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Resolving address...`;
+
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
+          headers: { 'Accept-Language': 'en' }
+        });
+        if (!res.ok) throw new Error("Lookup failed");
+        
+        const data = await res.json();
+        if (data && data.display_name) {
+          const a = data.address || {};
+          const street = a.road || a.pedestrian || a.suburb || a.neighbourhood || '';
+          const city = a.city || a.town || a.county || a.state || 'Lagos';
+          
+          if (street) {
+            addressInput.value = `${street}, ${city}`;
+          } else {
+            addressInput.value = data.display_name.split(',').slice(0, 3).join(',').trim();
+          }
+          statusEl.innerHTML = `<span style="color:var(--accent-green);"><i class="fa-solid fa-check"></i> Address resolved</span>`;
+        } else {
+          statusEl.innerText = "";
+        }
+      } catch (err) {
+        statusEl.innerText = "";
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 3. Map Initialization
+    // -------------------------------------------------------------
+    function initReportMap() {
+      const defaultLat = 6.5244;
+      const defaultLng = 3.3792;
+      const container = document.getElementById('pickerMap');
+      if (!container) return;
+
+      pickerMap = L.map('pickerMap').setView([defaultLat, defaultLng], 12);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(pickerMap);
+
+      selectedMarker = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(pickerMap);
+
+      selectedMarker.on('dragend', function (e) {
+        const coords = e.target.getLatLng();
+        updateCoordinates(coords.lat, coords.lng);
+        reverseGeocode(coords.lat, coords.lng);
+      });
+
+      pickerMap.on('click', function (e) {
+        selectedMarker.setLatLng(e.latlng);
+        updateCoordinates(e.latlng.lat, e.latlng.lng);
+        reverseGeocode(e.latlng.lat, e.latlng.lng);
+      });
+
+      setTimeout(() => { pickerMap.invalidateSize(); }, 250);
+    }
+
+    function updateCoordinates(lat, lng) {
+      document.getElementById('incidentLat').value = Number(lat).toFixed(6);
+      document.getElementById('incidentLng').value = Number(lng).toFixed(6);
+    }
+
+    // Helper: show alert and focus field
+    function showValidationError(message, elementId) {
+      const alertBox = document.getElementById('reportAlert');
+      alertBox.style.display = 'block';
+      alertBox.style.background = '#fee2e2';
+      alertBox.style.color = '#b91c1c';
+      alertBox.style.border = '1px solid #fca5a5';
+      alertBox.innerHTML = `<strong>Submission Error:</strong> ${message}`;
+      
+      const targetElement = document.getElementById(elementId);
+      if (targetElement) {
+        targetElement.focus();
+        targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 4. Form Submit with Unified Field Checks
+    // -------------------------------------------------------------
+    document.getElementById('reportForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const alertBox = document.getElementById('reportAlert');
+      const submitBtn = document.getElementById('submitBtn');
+
+      const title = document.getElementById('incidentTitle').value;
+      const category = document.getElementById('incidentCategory').value;
+      const description = document.getElementById('incidentDesc').value;
+      const address = document.getElementById('incidentAddress').value;
+      const lat = parseFloat(document.getElementById('incidentLat').value);
+      const lng = parseFloat(document.getElementById('incidentLng').value);
+
+      // Check 1: Validate Title
+      const titleError = validateIncidentTitle(title);
+      if (titleError) {
+        showValidationError(titleError, 'incidentTitle');
+        return;
+      }
+
+      // Check 2: Validate Description
+      const descError = validateIncidentDescription(description);
+      if (descError) {
+        showValidationError(descError, 'incidentDesc');
+        return;
+      }
+
+      // Check 3: Validate Address
+      const addressError = validateIncidentAddress(address);
+      if (addressError) {
+        showValidationError(addressError, 'incidentAddress');
+        return;
+      }
+
+      // Passed all checks, transmit
+      alertBox.style.display = 'none';
+      submitBtn.innerText = "Transmitting to Dispatch...";
+      submitBtn.disabled = true;
+
+      const payload = {
+        user_id: activeUser.id,
+        title: title.trim(),
+        category: category,
+        description: description.trim(),
+        location_address: address.trim(),
+        latitude: lat,
+        longitude: lng
+      };
+
+      try {
+        const res = await fetch('http://localhost:5000/api/incidents', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          alertBox.style.display = 'block';
+          alertBox.style.background = '#dcfce7';
+          alertBox.style.color = '#15803d';
+          alertBox.style.border = '1px solid #86efac';
+          alertBox.innerHTML = `<strong>Emergency Incident Logged!</strong> Ticket #${data.incident_id} created with initial classification: <strong>${data.inferred_severity}</strong>. Forwarding to tactical view...`;
+
+          document.getElementById('reportForm').reset();
+
+          setTimeout(() => {
+            window.location.href = 'http://localhost:5000/incident_map.html';
+          }, 1500);
+        } else {
+          throw new Error(data.error || 'Failed to submit report.');
+        }
+      } catch (err) {
+        alertBox.style.display = 'block';
+        alertBox.style.background = '#fee2e2';
+        alertBox.style.color = '#b91c1c';
+        alertBox.style.border = '1px solid #fca5a5';
+        alertBox.innerHTML = `<strong>Transmission Error:</strong> ${err.message}`;
+        submitBtn.innerHTML = `<i class="fa-solid fa-tower-broadcast"></i> Submit Emergency Report`;
+        submitBtn.disabled = false;
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initReportMap();
+    });
+  </script>
+</body>
+</html>

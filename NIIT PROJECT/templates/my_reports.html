@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>My Reports | EIRRS</title>
+  <link rel="stylesheet" href="../static/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="emergency-ticker">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span class="ticker-badge">Live Advisory</span>
+      <span>Emergency response lines operational 24/7 across Lagos state</span>
+    </div>
+    <div style="font-weight:bold;">Toll-Free: 112 / 767</div>
+  </div>
+  <header>
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon"><i class="fa-solid fa-truck-medical"></i></div>
+        <div class="brand-text">
+          <h1>EIRRS</h1>
+          <span>Emergency Incident System</span>
+        </div>
+      </a>
+      <nav>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="dashboard.html">Dashboard</a></li>
+          <li><a href="report_incident.html">Report</a></li>
+          <li><a href="incident_map.html">Tactical Map</a></li>
+          <li><a href="my_reports.html" class="active">My Reports</a></li>
+          <li><a href="response_status.html">Dispatch</a></li>
+          <li><a href="analytics.html">Analytics</a></li>
+        </ul>
+      </nav>
+      <div class="nav-actions">
+        <a href="report_incident.html" class="btn btn-danger btn-sm"><i class="fa-solid fa-plus"></i> File Incident</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="main-wrapper">
+    <h2><i class="fa-solid fa-list-check"></i> My Submitted Emergency Reports</h2>
+    <p style="color:var(--text-secondary); margin-bottom:20px;">Review emergency submissions filed under your citizen profile.</p>
+
+    <div class="card">
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Title</th>
+              <th>Category</th>
+              <th>Severity</th>
+              <th>Submitted Date</th>
+              <th>Current Status</th>
+            </tr>
+          </thead>
+          <tbody id="myTable">
+            <tr><td colspan="6" style="text-align:center;">Loading records...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="../static/main.js"></script>
+  <script>
+    fetchIncidents().then(res => {
+      const tb = document.getElementById('myTable');
+      tb.innerHTML = '';
+      if(res.data) {
+        res.data.slice(0, 5).forEach(i => {
+          tb.innerHTML += `
+            <tr>
+              <td>#${i.id}</td>
+              <td><strong>${i.title}</strong></td>
+              <td>${i.category.toUpperCase()}</td>
+              <td><span class="badge badge-${i.severity}">${i.severity}</span></td>
+              <td>${formatDate(i.created_at)}</td>
+              <td><span class="badge badge-${i.status}">${i.status}</span></td>
+            </tr>
+          `;
+        });
+      }
+    });
+  </script>
+</body>
+</html>

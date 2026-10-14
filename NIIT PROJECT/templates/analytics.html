@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Emergency Analytics & Intelligence | EIRRS</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+    .chart-container {
+      background: var(--white);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+    }
+    .chart-container img {
+      width: 100%;
+      height: auto;
+      max-height: 480px;
+      object-fit: contain;
+      border-radius: 6px;
+    }
+    .stat-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .stat-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 14px;
+      background: var(--surface2);
+      border-radius: 8px;
+      border-left: 4px solid var(--primary);
+    }
+    .stat-item.critical { border-left-color: var(--accent-critical); }
+    .stat-item.resolved { border-left-color: var(--accent-green); }
+    .stat-item.warning { border-left-color: var(--accent-yellow); }
+    @media (max-width: 900px) {
+      .analytics-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="emergency-ticker">
+    <div class="ticker-content">
+      <span class="ticker-badge">Statistical Grid</span>
+      <span>Automated Python Analytics Engine & Response Metrics</span>
+    </div>
+    <div style="font-weight:bold;">Toll-Free: 112 / 767</div>
+  </div>
+
+  <header>
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon"><i class="fa-solid fa-truck-medical"></i></div>
+        <div class="brand-text">
+          <h1>EIRRS</h1>
+          <span>Emergency Incident System</span>
+        </div>
+      </a>
+      <nav>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="dashboard.html">Dashboard</a></li>
+          <li><a href="incident_map.html">Tactical Map</a></li>
+          <li><a href="analytics.html" class="active">Analytics</a></li>
+          <li><a href="profile.html">Profile</a></li>
+        </ul>
+      </nav>
+      <div class="nav-actions">
+        <button onclick="toggleTheme()" class="btn btn-outline btn-sm" style="border:none;" title="Toggle Theme">
+          <i id="themeIcon" class="fa-solid fa-sun"></i>
+        </button>
+        <button onclick="handleLogout()" class="btn btn-outline btn-sm">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="main-wrapper">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; flex-wrap:wrap; gap:12px;">
+      <div>
+        <h2 style="font-size:1.8rem; font-weight:800; color:var(--text-main);">
+          <i class="fa-solid fa-chart-pie" style="color:var(--primary);"></i> Operational Intelligence & Reports
+        </h2>
+        <p style="color:var(--text-muted); font-size:0.95rem;">Automated Matplotlib visual summaries and live response audit metrics.</p>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button onclick="refreshAnalytics()" class="btn btn-outline btn-sm">
+          <i class="fa-solid fa-arrows-rotate"></i> Regenerate Charts
+        </button>
+        <a href="http://localhost:5000/api/reports/export/csv" class="btn btn-primary btn-sm" download>
+          <i class="fa-solid fa-file-csv"></i> Download CSV Ledger
+        </a>
+      </div>
+    </div>
+
+    <!-- Quick Stats Metric Strip -->
+    <div class="metrics-bar" style="margin: 0 0 30px 0;">
+      <div class="metric-card">
+        <div class="metric-number" id="statTotalIncidents">--</div>
+        <div class="metric-label">Total Logged</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-number" id="statPendingVerification" style="color:var(--accent-yellow);">--</div>
+        <div class="metric-label">Needs Verification</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-number" id="statActiveDispatches" style="color:#ea580c;">--</div>
+        <div class="metric-label">Dispatched Units</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-number" id="statResolvedCount" style="color:var(--accent-green);">--</div>
+        <div class="metric-label">Resolved Incidents</div>
+      </div>
+    </div>
+
+    <!-- Main Chart & KPI Grid -->
+    <div class="analytics-grid">
+      <!-- Dynamic Matplotlib Chart Render -->
+      <div class="chart-container">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h3 style="font-size:1.1rem; font-weight:800; color:var(--text-main);">
+            <i class="fa-solid fa-chart-simple" style="color:var(--primary);"></i> System Category & Severity Distribution
+          </h3>
+          <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">Engine: Matplotlib (Agg)</span>
+        </div>
+        <img id="backendChart" src="http://localhost:5000/api/reports/chart" alt="Emergency Statistics Chart" onerror="this.onerror=null; this.src=''; this.alt='No incidents logged yet to generate charts.';">
+      </div>
+
+      <!-- Live Operational Breakdown -->
+      <div class="card" style="margin-bottom:0;">
+        <h3 style="font-size:1.1rem; font-weight:800; color:var(--text-main); margin-bottom:16px;">
+          <i class="fa-solid fa-clipboard-list" style="color:var(--primary);"></i> Triage Distribution
+        </h3>
+
+        <ul class="stat-list">
+          <li class="stat-item critical">
+            <div>
+              <strong style="display:block; font-size:0.95rem;">Critical Priority</strong>
+              <small style="color:var(--text-muted);">Immediate life threat</small>
+            </div>
+            <span id="statCritical" style="font-size:1.2rem; font-weight:800; color:var(--accent-critical);">0</span>
+          </li>
+          <li class="stat-item warning">
+            <div>
+              <strong style="display:block; font-size:0.95rem;">High Severity</strong>
+              <small style="color:var(--text-muted);">Active hazards & fire</small>
+            </div>
+            <span id="statHigh" style="font-size:1.2rem; font-weight:800; color:var(--accent-yellow);">0</span>
+          </li>
+          <li class="stat-item">
+            <div>
+              <strong style="display:block; font-size:0.95rem;">Medium / Low Tier</strong>
+              <small style="color:var(--text-muted);">Infrastructure & traffic</small>
+            </div>
+            <span id="statMediumLow" style="font-size:1.2rem; font-weight:800; color:var(--primary);">0</span>
+          </li>
+          <li class="stat-item resolved">
+            <div>
+              <strong style="display:block; font-size:0.95rem;">Resolution Rate</strong>
+              <small style="color:var(--text-muted);">Completed responses</small>
+            </div>
+            <span id="statResolutionRate" style="font-size:1.2rem; font-weight:800; color:var(--accent-green);">0%</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-bottom">
+      <div>Assigned Student: <strong>Bojuwoye Edeosa</strong></div>
+      <div>&copy; 2026 Emergency Incident Reporting & Response System (EIRRS)</div>
+    </div>
+  </footer>
+
+  <script src="../static/main.js"></script>
+  <script>
+    const user = getActiveUser();
+    if (!user) {
+      window.location.href = 'http://localhost:5000/login.html';
+    }
+
+    async function loadAnalyticsData() {
+      try {
+        const res = await fetch('http://localhost:5000/api/incidents');
+        const json = await res.json();
+        if (!json.success) return;
+
+        const incidents = json.data;
+        const total = incidents.length;
+
+        const reported = incidents.filter(i => i.status === 'reported').length;
+        const dispatched = incidents.filter(i => i.status === 'dispatched' || i.status === 'acknowledged').length;
+        const resolved = incidents.filter(i => i.status === 'resolved').length;
+
+        const critical = incidents.filter(i => i.severity === 'CRITICAL').length;
+        const high = incidents.filter(i => i.severity === 'HIGH').length;
+        const mediumLow = incidents.filter(i => i.severity === 'MEDIUM' || i.severity === 'LOW').length;
+
+        document.getElementById('statTotalIncidents').innerText = total;
+        document.getElementById('statPendingVerification').innerText = reported;
+        document.getElementById('statActiveDispatches').innerText = dispatched;
+        document.getElementById('statResolvedCount').innerText = resolved;
+
+        document.getElementById('statCritical').innerText = critical;
+        document.getElementById('statHigh').innerText = high;
+        document.getElementById('statMediumLow').innerText = mediumLow;
+        document.getElementById('statResolutionRate').innerText = total > 0 ? `${Math.round((resolved / total) * 100)}%` : '0%';
+
+      } catch (err) {
+        console.error("Analytics fetch error:", err);
+      }
+    }
+
+    function refreshAnalytics() {
+      // Re-fetch incident statistics
+      loadAnalyticsData();
+      // Bust browser cache to reload the newly rendered Matplotlib image
+      const chartImg = document.getElementById('backendChart');
+      chartImg.src = `http://localhost:5000/api/reports/chart?t=${new Date().getTime()}`;
+    }
+
+    document.addEventListener('DOMContentLoaded', loadAnalyticsData);
+  </script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Incident Details | EIRRS</title>
+  <link rel="stylesheet" href="../static/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="emergency-ticker">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span class="ticker-badge">Live Advisory</span>
+      <span>Emergency response lines operational 24/7 across Lagos state</span>
+    </div>
+    <div style="font-weight:bold;">Toll-Free: 112 / 767</div>
+  </div>
+  <header>
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon"><i class="fa-solid fa-truck-medical"></i></div>
+        <div class="brand-text">
+          <h1>EIRRS</h1>
+          <span>Emergency Incident System</span>
+        </div>
+      </a>
+      <nav>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="report_incident.html">Report</a></li>
+          <li><a href="incident_map.html">Tactical Map</a></li>
+          <li><a href="my_reports.html">My Reports</a></li>
+          <li><a href="response_status.html">Dispatch</a></li>
+          <li><a href="analytics.html">Analytics</a></li>
+        </ul>
+      </nav>
+      <div class="nav-actions">
+        <a href="dashboard.html" class="btn btn-outline btn-sm">&larr; Back to Dashboard</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="main-wrapper" style="max-width:900px;">
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-subtle); padding-bottom:12px; margin-bottom:16px;">
+        <h2 id="incTitle">Loading Incident...</h2>
+        <span id="incSeverity" class="badge"></span>
+      </div>
+
+      <p id="incDesc" style="font-size:1.05rem; margin-bottom:20px;"></p>
+      
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
+        <div><strong>Category:</strong> <span id="incCategory"></span></div>
+        <div><strong>Current Status:</strong> <span id="incStatus" class="badge"></span></div>
+        <div><strong>Location:</strong> <span id="incAddress"></span></div>
+        <div><strong>Reported At:</strong> <span id="incTime"></span></div>
+      </div>
+
+      <h3 style="margin-top:24px; margin-bottom:12px;">Dispatch Updates & Audit Timeline</h3>
+      <div id="timeline"></div>
+    </div>
+  </div>
+
+  <script src="../static/main.js"></script>
+  <script>
+    const id = new URLSearchParams(window.location.search).get('id') || 1;
+    fetch(`/api/incidents/${id}`).then(r => r.json()).then(res => {
+      if (res.success) {
+        const d = res.data;
+        document.getElementById('incTitle').innerText = `#${d.id} - ${d.title}`;
+        document.getElementById('incDesc').innerText = d.description;
+        document.getElementById('incCategory').innerText = d.category.toUpperCase();
+        document.getElementById('incAddress').innerText = d.location_address;
+        document.getElementById('incTime').innerText = formatDate(d.created_at);
+
+        const sev = document.getElementById('incSeverity');
+        sev.innerText = d.severity;
+        sev.className = `badge badge-${d.severity}`;
+
+        const st = document.getElementById('incStatus');
+        st.innerText = d.status;
+        st.className = `badge badge-${d.status}`;
+
+        const tl = document.getElementById('timeline');
+        if (d.responses && d.responses.length > 0) {
+          tl.innerHTML = d.responses.map(r => `
+            <div style="padding:10px 14px; border-left:3px solid var(--action-primary); background:#f8fafc; margin-bottom:8px; border-radius:0 6px 6px 0;">
+              <strong>Status Update: ${r.status_update.toUpperCase()}</strong>
+              <div style="font-size:0.85rem; color:var(--text-secondary);">${formatDate(r.timestamp)}</div>
+              <div>${r.notes || 'No responder notes attached.'}</div>
+            </div>
+          `).join('');
+        } else {
+          tl.innerHTML = '<p style="color:var(--text-secondary);">No responder logs attached yet.</p>';
+        }
+      }
+    });
+  </script>
+</body>
+</html>
